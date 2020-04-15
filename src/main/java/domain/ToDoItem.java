@@ -21,7 +21,7 @@ public class ToDoItem {
     public String createdDate;
 
     @DatabaseField()
-    public String itemCategory = "Unsorted";
+    public String itemCategory;
 
     @DatabaseField()
     public String status;
@@ -38,10 +38,10 @@ public class ToDoItem {
         this.about = about;
         this.owner = owner;
         this.dueDate = dueDate.toString();
-
         this.createdDate = new TimeStamp(currentTime).toString();
-        this.status = "In Progress";
-        this.id = 1;
+        this.status = "Snoozed";
+        this.itemCategory = "Unsorted";
+        this.id = -1;
     }
 
     public ToDoItem(String about, String owner, TimeStamp dueDate, TimeStamp createdDate, String status, String category, int id){

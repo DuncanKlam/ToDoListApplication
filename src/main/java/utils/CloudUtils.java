@@ -5,6 +5,7 @@ import domain.TimeStamp;
 import domain.ToDoItem;
 import com.google.api.client.http.*;
 import com.google.api.client.http.javanet.NetHttpTransport;
+import exceptions.ParameterIsEmptyException;
 import exceptions.ParameterIsNotJsonStringException;
 import org.javatuples.Pair;
 import org.jfree.data.general.DefaultPieDataset;
@@ -20,11 +21,10 @@ import java.util.Map;
 public class CloudUtils {
 
     private HttpRequestFactory requestFactory;
-    private String baseURL = "https://todoserver222.herokuapp.com/";
-    public String todosURL;
+    public String todosURL = "https://todoserver222.herokuapp.com/todos/";
+    public String teamURL = "https://todoserver222.herokuapp.com/teamone/todos/";
 
-    public CloudUtils(String name) {
-        todosURL = baseURL + name + "/todos/";
+    public CloudUtils() {
         requestFactory = new NetHttpTransport().createRequestFactory();
     }
 
@@ -39,11 +39,33 @@ public class CloudUtils {
         }
     }
 
+    public String uploadItemToCloud(ToDoItem toDoItem){
+        Map<String, Object> data = new LinkedHashMap<>();
+        try {
+            data.put("about", toDoItem.about);
+            data.put("owner", "teamone");
+            data.put("due_date", toDoItem.dueDate);
+            data.put("created_date", toDoItem.createdDate);
+            data.put("status", toDoItem.status);
+            data.put("category", toDoItem.itemCategory);
+            if (!(toDoItem.id == -1)){
+                data.put("id", toDoItem.id);
+            }
+            HttpContent content = new UrlEncodedContent(data);
+            HttpRequest postRequest = requestFactory.buildPostRequest(
+                    new GenericUrl(todosURL), content);
+            postRequest.execute();
+            return "Success";
+        } catch (NullPointerException | IOException e){
+            return "Failure";
+        }
+    }
+
     public String uploadListToCloud(List<ToDoItem> toDoItemList) throws IOException{
         Map<String, Object> data = new LinkedHashMap<>();
         try {
             for (ToDoItem tdi : toDoItemList) {
-                data.put("memo", tdi.about);
+                data.put("about", tdi.about);
                 data.put("owner", tdi.owner);
                 data.put("due_date", tdi.dueDate);
                 data.put("created_date", tdi.createdDate);
@@ -60,13 +82,18 @@ public class CloudUtils {
         }
     }
 
-    public List<ToDoItem> readCloud() throws ParameterIsNotJsonStringException {
-        return parseCloudJSONString(retrieveCloud());
+    public List<ToDoItem> readCloud(){
+        try {
+            return parseCloudJSONString(retrieveCloud());
+        } catch (ParameterIsNotJsonStringException e){
+            e.printStackTrace();
+            return null;
+        }
     }
 
     public String retrieveCloud(){
         try{
-            HttpRequest getRequest = requestFactory.buildGetRequest(new GenericUrl(todosURL));
+            HttpRequest getRequest = requestFactory.buildGetRequest(new GenericUrl(teamURL));
             return getRequest.execute().parseAsString();
         } catch (IOException e){
             e.printStackTrace();
@@ -75,7 +102,7 @@ public class CloudUtils {
     }
 
     //WIP
-    public PieDataset getPieData() throws Exception{
+    public PieDataset getPieData(){
         String rawData;
         List<ToDoItem> toDoItems;
         List<Pair<String, Integer>> pairs;
@@ -101,7 +128,7 @@ public class CloudUtils {
         JsonArray rootObjects = rootElement.getAsJsonArray();
         if(rootObjects.size() > 0) {
             for (JsonElement rootObject : rootObjects) {
-                var about = rootObject.getAsJsonObject().getAsJsonPrimitive("memo").getAsString();
+                var about = rootObject.getAsJsonObject().getAsJsonPrimitive("about").getAsString();
                 var owner = rootObject.getAsJsonObject().getAsJsonPrimitive("owner").getAsString();
                 var dueDateJson = rootObject.getAsJsonObject().getAsJsonPrimitive("due_date").getAsString();
                 var createdDateJson = rootObject.getAsJsonObject().getAsJsonPrimitive("created_date").getAsString();
@@ -111,14 +138,14 @@ public class CloudUtils {
                 list.add(new ToDoItem(about, owner, makeTSfromJsonString(dueDateJson), makeTSfromJsonString(createdDateJson), status, category, idNumber));
             }
         } else {
-            list.add(new ToDoItem("Cloud is empty", "You", new TimeStamp("0000-00-00T00:00:00.0000")));
+            return null;
         }
         return list;
     }
 
-    public TimeStamp makeTSfromJsonString(String jsonString) throws ParameterIsNotJsonStringException{
+    public TimeStamp makeTSfromJsonString(String jsonString){
         if (thisIsNotAJSONString(jsonString)) {
-            throw new ParameterIsNotJsonStringException();
+            return null;
         }
         JsonParser jsonParser = new JsonParser();
         JsonElement rootElement = jsonParser.parse(jsonString);
@@ -130,10 +157,10 @@ public class CloudUtils {
     }
 
 
-    public void deleteTodoItem(int id) {
+    public void deleteTodoItem(String id) {
         try {
             HttpRequest deleteRequest = requestFactory.buildDeleteRequest(
-                    new GenericUrl("https://todoserver222.herokuapp.com/todos/" + id));
+                    new GenericUrl(todosURL + id));
             deleteRequest.execute();
         } catch (IOException e){
             e.printStackTrace();
@@ -144,21 +171,50 @@ public class CloudUtils {
         return json.charAt(0) == '{' && json.charAt(0) == '[';
     }
 
+    public String deleteSingleItem(String identifier){
+        JsonParser jsonParser = new JsonParser();
+        JsonElement rootElement = jsonParser.parse(retrieveCloud());
+        JsonArray rootObjects = rootElement.getAsJsonArray();
+        for (JsonElement rootObject : rootObjects){
+            String idString = rootObject.getAsJsonObject().getAsJsonPrimitive("id").getAsString();
+            int id = rootObject.getAsJsonObject().getAsJsonPrimitive("id").getAsInt();
+            if(idString.equals(identifier)){
+                deleteTodoItem(Integer.toString(id));
+                return "Cloud Delete: Success";
+            }
+        }
+        return "Not in cloud";
+    }
 
-    //Extremely destructive to anyone else using the cloud. Completely wipes every to-do item. Only use in extreme cases.
+
+    //Extremely destructive to anyone else using the cloud. Completely wipes every to-do item in our team name. Only use in extreme cases.
     public void clearTheCloud(){
         JsonParser jsonParser = new JsonParser();
         JsonElement rootElement = jsonParser.parse(retrieveCloud());
         JsonArray rootObjects = rootElement.getAsJsonArray();
         for (JsonElement rootObject : rootObjects){
-            var number = rootObject.getAsJsonObject().getAsJsonPrimitive("id").getAsInt();
+            var number = rootObject.getAsJsonObject().getAsJsonPrimitive("id").getAsString();
             deleteTodoItem(number);
         }
     }
 
     public void deleteCloudEntriesSpecific(int start, int end){
         for (int i = start; i < end; i++){
-            deleteTodoItem(i);
+            deleteTodoItem(Integer.toString(i));
         }
+    }
+
+    public int getNewToDoCloudID(ToDoItem newToDo) {
+        JsonParser jsonParser = new JsonParser();
+        JsonElement rootElement = jsonParser.parse(retrieveCloud());
+        JsonArray rootObjects = rootElement.getAsJsonArray();
+        for (JsonElement rootObject : rootObjects) {
+            String memo = rootObject.getAsJsonObject().getAsJsonPrimitive("about").getAsString();
+            int id = rootObject.getAsJsonObject().getAsJsonPrimitive("id").getAsInt();
+            if (memo.equals(newToDo.about)) {
+                return id;
+            }
+        }
+        return -1;
     }
 }

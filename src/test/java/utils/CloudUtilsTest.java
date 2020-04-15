@@ -1,19 +1,27 @@
 package utils;
 
+import com.google.api.client.http.*;
+import com.google.api.client.http.javanet.NetHttpTransport;
 import domain.TimeStamp;
 import domain.ToDoItem;
 import exceptions.ParameterIsNotJsonStringException;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class CloudUtilsTest {
 
-    CloudUtils cloudUtils = new CloudUtils("Klemm");
+    CloudUtils cloudUtils = new CloudUtils();
+
+    HttpRequestFactory requestFactory = new NetHttpTransport().createRequestFactory();
+
+    String todosURL = "https://todoserver222.herokuapp.com/todos";
 
     ToDoItem todoItem1 = new ToDoItem("Reminder for grilled cheese", "Klemm", new TimeStamp("2020-04-04T18:35:23.669Z"));
     ToDoItem todoItem2 = new ToDoItem("Don't forget the pana cotta", "Klemm", new TimeStamp("2020-04-12T14:43:54.669Z"));
@@ -21,9 +29,35 @@ class CloudUtilsTest {
     List<ToDoItem> list = new LinkedList<>();
     List<ToDoItem> list2 = new LinkedList<>();
 
+    String currentTime = java.time.Clock.systemUTC().instant().toString();
+
+
     @Test
     void checkConnection(){
         assertEquals(true, cloudUtils.checkConnection());
+    }
+
+    @Test
+    void canUploadCustomID() throws IOException {
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("memo", "custom test item");
+        data.put("owner", "teamone");
+        data.put("due_date", new TimeStamp(currentTime));
+        data.put("created_date", new TimeStamp(currentTime));
+        data.put("status", "nonexistent");
+        data.put("category", "Black Ops");
+        data.put("id", 111);
+        HttpContent content = new UrlEncodedContent(data);
+        HttpRequest postRequest = requestFactory.buildPostRequest(
+                new GenericUrl(todosURL), content);
+        //postRequest.execute().parseAsString();
+        //Kind of screws up the whole ID system on the cloud so tread lightly
+    }
+
+    @Test
+    void uploadItemWithoutID() {
+        cloudUtils.uploadItemToCloud(todoItem1);
+        cloudUtils.uploadItemToCloud(todoItem2);
     }
 
 
@@ -38,7 +72,7 @@ class CloudUtilsTest {
 
         assertEquals(list.get(0).getUniqueItemID(), list2.get(0).getUniqueItemID());
 
-        cloudUtils.deleteTodoItem(1);
+        cloudUtils.deleteTodoItem("1");
     }
 
     @Test
@@ -65,8 +99,8 @@ class CloudUtilsTest {
         assertEquals(list.get(1).getUniqueItemID(), list2.get(1).getUniqueItemID());
 
 
-        cloudUtils.deleteTodoItem(1);
-        cloudUtils.deleteTodoItem(2);
+        cloudUtils.deleteTodoItem("1");
+        cloudUtils.deleteTodoItem("2");
     }
 
     @Test
@@ -75,7 +109,7 @@ class CloudUtilsTest {
 
         list2 = cloudUtils.parseCloudJSONString(cloudUtils.retrieveCloud());
 
-        assertEquals("Cloud is emptyYou big dummy{year='0', month='0', day='0'}", list2.get(0).getUniqueItemID());
+        assertEquals(null, list2);
 
     }
 

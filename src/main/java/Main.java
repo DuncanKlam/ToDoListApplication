@@ -154,7 +154,7 @@ public class Main {
                 }
             }
         }
-        catch (IOException | ParameterIsNotJsonStringException | SQLException e) {
+        catch (IOException | SQLException e) {
             System.out.println("Something went really wrong. Have fun finding it!");
             e.printStackTrace();
         }

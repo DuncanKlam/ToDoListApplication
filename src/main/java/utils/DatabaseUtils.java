@@ -32,9 +32,29 @@ public class DatabaseUtils {
         }
     }
 
-    public List<ToDoItem> readDatabase() throws SQLException {
-        var allItems = todoDao.queryForAll();
-        return new LinkedList<>(allItems);
+    public List<ToDoItem> readDatabase(){
+        try {
+            var allItems = todoDao.queryForAll();
+            return new LinkedList<>(allItems);
+        } catch(SQLException e){
+            e.getErrorCode();
+            return new LinkedList<>();
+        }
+    }
+
+    public String deleteSingleItem(String identifier){
+        try {
+            var customQuery = todoDao.queryBuilder().where().eq("id", identifier).prepare();
+            var itemToDelete = todoDao.query(customQuery);
+            if (itemToDelete.isEmpty()) {
+                return "Not on database";
+            } else {
+                todoDao.delete(itemToDelete);
+                return "Database Delete: Success";
+            }
+        } catch (SQLException e){
+            return "Not on database";
+        }
     }
 
     public void clearDatabase() throws SQLException {

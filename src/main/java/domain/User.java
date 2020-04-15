@@ -12,13 +12,12 @@ public class User {
 
     public String name;
     public List<ToDoItem> toDoList = new LinkedList<>();
-    private StatisticsModel statisticsModel;
     public CloudUtils cloudUtils;
     public DatabaseUtils databaseUtils;
 
     public User(String name) throws SQLException {
         this.name = name;
-        this.cloudUtils = new CloudUtils(name);
+        this.cloudUtils = new CloudUtils();
         this.databaseUtils = new DatabaseUtils();
 
     }
@@ -34,6 +33,16 @@ public class User {
     public ToDoItem getToDoItem(int itemID){ return toDoList.get(itemID); }
 
     public List<ToDoItem> getToDoItemList(){return toDoList;}
+
+    public String deleteToDoItem(String identifier){
+        for (ToDoItem item : toDoList){
+            if (item.id == Integer.parseInt(identifier)){
+                toDoList.remove(item);
+                return "Local Delete: Success";
+            }
+        }
+        return "Not in local storage";
+    }
 
     public void removeToDoItem(int itemID){ toDoList.remove(itemID); }
 
