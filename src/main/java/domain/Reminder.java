@@ -12,6 +12,14 @@ public class Reminder {
     private Period period;
     private String status;
 
+    public Reminder(){
+        this.dueDate=LocalDate.of(2000,1,1);
+        this.message="";
+        this.overdueMessage="";
+        this.period = Period.ZERO;
+        this.status="";
+    }
+
     public Reminder(ToDoItem item){
         TimeStamp timeStamp = new TimeStamp(item.dueDate);
         this.dueDate = LocalDate.of(timeStamp.getYear(), timeStamp.getMonth(), timeStamp.getDay());

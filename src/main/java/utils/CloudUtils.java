@@ -48,9 +48,7 @@ public class CloudUtils {
             data.put("created_date", toDoItem.createdDate);
             data.put("status", toDoItem.status);
             data.put("category", toDoItem.itemCategory);
-            if (!(toDoItem.id == 0)){
-                data.put("id", toDoItem.id);
-            }
+            data.put("id", null);
             HttpContent content = new UrlEncodedContent(data);
             HttpRequest postRequest = requestFactory.buildPostRequest(
                     new GenericUrl(todosURL), content);

@@ -9,7 +9,7 @@ import com.j256.ormlite.table.DatabaseTable;
 public class ToDoItem {
 
 
-    @DatabaseField()
+    @DatabaseField(id = true)
     public String about;
 
     @DatabaseField()
@@ -27,7 +27,7 @@ public class ToDoItem {
     @DatabaseField()
     public String status;
 
-    @DatabaseField(id = true)
+    @DatabaseField()
     public int id;
 
     public String stringID = null;

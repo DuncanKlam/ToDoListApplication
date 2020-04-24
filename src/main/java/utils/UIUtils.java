@@ -206,6 +206,9 @@ public class UIUtils {
     public String getMostUrgentReminderMessage() {
         List<ToDoItem> list = getCombinedListFromSourceWithDuplicatesRemoved();
         List<Reminder> reminderList = makeRemindersFromToDos(list);
+        if(reminderList.size()==0){
+            return "No Reminders";
+        }
         Reminder mostUrgent = reminderList.get(0);
         for (Reminder reminder : reminderList){
             if(mostUrgent.timeLeft() > reminder.timeLeft()){
@@ -232,7 +235,11 @@ public class UIUtils {
     private List<Reminder> makeRemindersFromToDos(List<ToDoItem> list) {
         List<Reminder> reminders = new LinkedList<>();
         for (ToDoItem item : list){
-            reminders.add(new Reminder(item));
+            if(item.status.contentEquals("n/a")){
+                reminders.add(new Reminder());
+            }else {
+                reminders.add(new Reminder(item));
+            }
         }
         return reminders;
     }
